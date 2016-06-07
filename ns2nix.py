@@ -121,7 +121,7 @@ class Converter(object):
 		'''	dset.attrs['Timestamp'] = timestamp
 			dset.attrs['Unit'] = unit
 			dset.attrs['Index'] = index'''
-		#############THE METHOD BELOW IS TIME AND MEMORY CONSUMING################
+		#############THE METHOD BELOW IS TIME AND MEMORY CONSUMING NEEDS REFINING################
 		#	sec = section.create_section(name+' metadata','odml.subject')
 		#	sec.create_property('Timestamp',nix.Value(timestamp))
 		#	sec.create_property('Unit',nix.Value(unit))
