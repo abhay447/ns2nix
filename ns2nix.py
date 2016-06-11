@@ -87,7 +87,7 @@ class Converter(object):
 			data[n] = event.get_data(n)
 
 		block = self.get_block_for_type(event.entity_type)
-		dset = block.create_data_array(event.label, "nix.sampled", data=data)
+		dset = block.create_data_array(event.label, "nix.event", data=data)
 		#dset = group.create_dataset(event.label, data=data)
 		self.copy_metadata(self._nixF,dset, event.metadata_raw)
 
@@ -95,45 +95,44 @@ class Converter(object):
 		(data, times, ic) = analog.get_data()
 		block = self.get_block_for_type(analog.entity_type)
 		#block = self.get_group_for_type(analog.entity_type)
-		d_t = np.vstack((times, data)).T
 		#dset = block.create_data_array(analog.label, data=d_t)
-		dset = block.create_data_array(analog.label, "nix.sampled", dtype=np.double, data=d_t)
+		dset = block.create_data_array(analog.label, "nix.analog", dtype=np.double, data=data.T)
+		dim = dset.append_range_dimension(times)
+		dim.unit = "s"
+		dim.label = "time"
 		self.copy_metadata(self._nixF,dset, analog.metadata_raw)
 
+	#had to supply a prefix because there can be multiple segment entities#
 	def convert_segment(self, segment):
 		if not segment.item_count:
 			return
 		seg_block = self.get_block_for_type(segment.entity_type)
-		self.copy_metadata(self._nixF,seg_block, segment.metadata_raw)
+		self.copy_metadata(self._nixF,seg_block, segment.metadata_raw,prefix=str(segment.id)+"_")
 
 		for index in range(0, segment.source_count):
 			source = segment.sources[index]
 			name = 'SourceInfo.%d.' % index
 			#self.copy_metadata(seg_group, source.metadata_raw, prefix=name)
-			self.copy_metadata(self._nixF,seg_block, source.metadata_raw, prefix=name)
-
+			self.copy_metadata(self._nixF,seg_block, source.metadata_raw, prefix=str(segment.id)+"_"+name)
+			
 		for index in range(0, segment.item_count):
 			(data, timestamp, samples, unit) = segment.get_data(index)
 			name = '%d - %f' % (index, timestamp)
-			dset = seg_block.create_data_array(name, "nix.sampled", dtype=np.double, data=data.T)
-			print((100*float(index)/segment.item_count))
-		#############BELOW IS THE H5PY WAY OF METADATA HANDLING###################
-		'''	dset.attrs['Timestamp'] = timestamp
-			dset.attrs['Unit'] = unit
-			dset.attrs['Index'] = index'''
-		#############THE METHOD BELOW IS TIME AND MEMORY CONSUMING NEEDS REFINING################
-		#	sec = section.create_section(name+' metadata','odml.subject')
-		#	sec.create_property('Timestamp',nix.Value(timestamp))
-		#	sec.create_property('Unit',nix.Value(unit))
-		#	sec.create_property('Index',nix.Value(index))
-		#	dset.metadata = sec
+			dset = seg_block.create_data_array(str(segment.id)+"_"+name+str(timestamp), "nix.segment", dtype=np.double, data=data.T)
+			#>>>>>>>>>>>>>>Need to handle '0' unit in descriptor below<<<<<<<<<<<<<<<#
+			stepSize = 1/segment.metadata_raw['SampleRate']
+			dim = dset.append_sampled_dimension(stepSize)
+			#dim.unit = str(unit)
+			dim.offset = timestamp
+			dim.label = "time"
+			
 
 	def convert_neural(self, neural):
 		data = neural.get_data()
 		#group = self._groups[neural.entity_type]
 		block = self.get_block_for_type(neural.entity_type)
 		name = "%d - %s" % (neural.id, neural.label)
-		dset = block.create_data_array(name, "nix.sampled", dtype=np.double, data=data)
+		dset = block.create_data_array(name, "nix.neural", dtype=nix.DataType.Double, data=data)
 		#group.data_arrays.append(dset)
 		self.copy_metadata(self._nixF,dset, neural.metadata_raw)
 
