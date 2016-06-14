@@ -120,7 +120,7 @@ class Converter(object):
 			name = '%d - %f' % (index, timestamp)
 			dset = seg_block.create_data_array(str(segment.id)+"_"+name, "nix.segment", dtype=np.double, data=data.T)
 			sec = self._nixF.create_section(str(segment.id)+"_"+name+"_metadata","odml.unit")
-			sec.create_property('unitID',nix.Value(unit))
+			sec.create_property('unit',nix.Value(unit))
 			dset.metadata = sec
 			
 			stepSize = 1/segment.metadata_raw['SampleRate']
